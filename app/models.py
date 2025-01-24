@@ -6,8 +6,8 @@ class Compte(models.Model):
     name = models.CharField(max_length=24)
     salary = models.FloatField(default=0)
     total = models.FloatField(default=0)
-    manager = models.ForeignKey(User, on_delete=models.CASCADE)
-    client = models.ForeignKey(User, on_delete=models.CASCADE)
+    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes')
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte')
 
 
 # Create your models here.
