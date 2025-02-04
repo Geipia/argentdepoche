@@ -9,5 +9,7 @@ class Compte(models.Model):
     manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes')
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte')
 
+    def __str__(self):
+        return self.name
 
 # Create your models here.
