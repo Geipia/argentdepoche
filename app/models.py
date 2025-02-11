@@ -11,8 +11,7 @@ class Compte(models.Model):
     
     @property
     def total (self):
-        return self.transactions.aggregate(models.Sum('amount'))['amount__sum']
-
+        return self.transactions.aggregate(models.Sum('amount'))['amount__sum'] 
 
     def __str__(self):
         return self.name
