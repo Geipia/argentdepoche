@@ -47,6 +47,10 @@ class TransactionAdmin(admin.ModelAdmin):
     list_filter = ['compte']
     list_per_page = 10
 
+    def get_list_filter(self, request):
+        # On affiche les filtres uniquement pour le superutilisateur
+        return self.list_filter if request.user.is_superuser else []
+
     def get_queryset(self, request):
         query_set = super().get_queryset(request)
         if not request.user.is_superuser:
