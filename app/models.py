@@ -11,7 +11,30 @@ class Compte(models.Model):
     
     @property
     def total (self):
-        return self.transactions.aggregate(models.Sum('amount'))['amount__sum'] 
+        return self.transactions.aggregate(models.Sum('amount'))['amount__sum'] or 0
+
+
+    def add_money(self, amount:float, description:str=None):
+        """
+        Permet d'ajouter de l'argent à un compte
+
+        Parameters
+        ----------
+        amount: int, integer
+        description
+        """
+        if amount < 0:
+            raise ValueError('Amount cannot be negative')
+        self.transactions.create(amount=amount, description=description)
+
+
+    def take_money(self, amount:float, description:str=None):
+        if amount < 0:
+            raise ValueError('Amount cannot be negative')
+        self.transactions.create(amount=-amount, description=description)
+
+
+
 
     def __str__(self):
         return self.name
