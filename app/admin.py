@@ -10,6 +10,8 @@ class CompteAdmin(admin.ModelAdmin):
     list_filter = ['manager', 'client']
     list_per_page = 10
 
+
+
     def get_list_filter(self, request):
         # On affiche les filtres uniquement pour le superutilisateur
         return self.list_filter if request.user.is_superuser else []

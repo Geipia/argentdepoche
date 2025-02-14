@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.translation import gettext as _
 
 class Compte(models.Model):
     # protected $fillable = ['user_id', 'manager_id', 'name', 'salary', 'total'];
-    name = models.CharField(max_length=24)
-    salary = models.FloatField(default=0)
+    name = models.CharField(max_length=24, verbose_name=_('Name'))
+    salary = models.FloatField(default=0, verbose_name=_('Salary'))
     #total = models.FloatField(default=0)
-    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes')
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes', verbose_name=_('Manager'))
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte', verbose_name=_('Account user'))
     
     @property
     def total (self):
@@ -42,10 +43,10 @@ class Compte(models.Model):
 
 class Transaction(models.Model):
     # protected $fillable = ['compte_id', 'amount', 'type', 'description'];
-    compte = models.ForeignKey(Compte, on_delete=models.CASCADE, related_name='transactions')
-    amount = models.FloatField()
-    description = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    compte = models.ForeignKey(Compte, on_delete=models.CASCADE, related_name='transactions', verbose_name=_('Account'))
+    amount = models.FloatField(verbose_name=_('Amount'))
+    description = models.TextField(null=True, blank=True, verbose_name=_('Description'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created at'))
 
     def __str__(self):
         return f"{self.compte.name} - {self.amount}"
