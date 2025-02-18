@@ -1,8 +1,14 @@
+from typing import Union
+
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
+from django.http.request import HttpRequest
 from unfold.admin import ModelAdmin
+from unfold.decorators import action
 from app.models import Compte, Transaction
+from django.utils.translation import gettext as _
+
 
 @admin.register(Compte)
 class CompteAdmin(ModelAdmin):
@@ -11,7 +17,24 @@ class CompteAdmin(ModelAdmin):
     list_filter = ['manager', 'client']
     list_per_page = 10
 
-    readonly_fields = ['client', 'total', 'manager']
+    actions_submit_line = ["add_one_euro_action"]
+
+    @action(
+        description=_("Ajout 1 euro action"),
+        # permissions=["changeform_submitline_action"]
+    )
+    def add_one_euro_action(self, request: HttpRequest, obj: Compte):
+        """
+        If instance is modified in any way, it also needs to be saved, since this handler is invoked after instance is saved.
+        """
+        obj.add_money(1)
+        # obj.save()
+
+    # def has_changeform_submitline_action_permission(self, request: HttpRequest, object_id: Union[str, int]):
+    #     Write your own bussiness logic. Code below will always display an action.
+        # return True
+
+    # readonly_fields = ['client', 'total', 'manager']
 
     def get_list_filter(self, request):
         # On affiche les filtres uniquement pour le superutilisateur
