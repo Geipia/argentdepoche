@@ -21,7 +21,7 @@ class Compte(models.Model):
 
         Parameters
         ----------
-        amount: int, integer
+        amount: float
         description
         """
         if amount < 0:

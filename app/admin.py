@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
 
 from app.models import Compte, Transaction
@@ -31,8 +32,14 @@ class CompteAdmin(admin.ModelAdmin):
         return request.user == obj.manager or request.user == obj.client
 
     def has_module_permission(self, request):
+        if not request.user:
+            return False
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
-        return request.user.is_superuser or request.user.comptes.exists() or request.user.mon_compte.exists()
+        if request.user.is_superuser:
+            return True
+        if not type(request.user) is User:
+            return False
+        return request.user.comptes.exists() or request.user.mon_compte.exists()
 
     def get_queryset(self, request):
         query_set = super().get_queryset(request)
@@ -68,6 +75,8 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def has_module_permission(self, request):
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
+        if not type(request.user) is User:
+            return False
         return request.user.is_superuser or request.user.comptes.exists() or request.user.mon_compte.exists()
 
 
