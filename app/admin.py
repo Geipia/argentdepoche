@@ -1,28 +1,28 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
-
+from unfold.admin import ModelAdmin
 from app.models import Compte, Transaction
 
 @admin.register(Compte)
-class CompteAdmin(admin.ModelAdmin):
+class CompteAdmin(ModelAdmin):
     list_display = ('name', 'salary', 'total', 'client')
     search_fields = ['name']
     list_filter = ['manager', 'client']
     list_per_page = 10
 
-
+    readonly_fields = ['client', 'total', 'manager']
 
     def get_list_filter(self, request):
         # On affiche les filtres uniquement pour le superutilisateur
         return self.list_filter if request.user.is_superuser else []
 
     
-    # def has_change_permission(self, request, obj:Compte = None):
-    #     # Ne peut changer que si l'utilisateur est manager
-    #     if obj is None:
-    #         return False
-    #     return super
+    def has_change_permission(self, request, obj:Compte = None):
+    # Ne peut changer que si l'utilisateur est manager
+        if obj is None:
+             return False
+        return request.user == obj.manager
     
     def has_view_permission(self, request, obj:Compte = None):
         # Ne peut visionner que si possesseur ou manager d'un compte
@@ -37,8 +37,8 @@ class CompteAdmin(admin.ModelAdmin):
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
         if request.user.is_superuser:
             return True
-        if not type(request.user) is User:
-            return False
+        #if not type(request.user) is User:
+            #return False
         return request.user.comptes.exists() or request.user.mon_compte.exists()
 
     def get_queryset(self, request):
@@ -46,11 +46,13 @@ class CompteAdmin(admin.ModelAdmin):
         if not request.user.is_superuser:
             query_set = query_set.filter(Q(manager=request.user) | Q(client=request.user))
         return query_set
+    
+
 
 
 
 @admin.register(Transaction)
-class TransactionAdmin(admin.ModelAdmin):
+class TransactionAdmin(ModelAdmin):
     list_display = ('compte', 'amount', 'description', 'created_at')
     search_fields = ['compte']
     list_filter = ['compte']
@@ -75,8 +77,8 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def has_module_permission(self, request):
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
-        if not type(request.user) is User:
-            return False
+        #if not type(request.user) is User:
+            #return False
         return request.user.is_superuser or request.user.comptes.exists() or request.user.mon_compte.exists()
 
 
