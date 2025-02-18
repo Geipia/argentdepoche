@@ -37,8 +37,8 @@ class CompteAdmin(ModelAdmin):
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
         if request.user.is_superuser:
             return True
-        #if not type(request.user) is User:
-            #return False
+        if not hasattr(request.user, 'comptes'):
+            return False
         return request.user.comptes.exists() or request.user.mon_compte.exists()
 
     def get_queryset(self, request):
@@ -77,8 +77,8 @@ class TransactionAdmin(ModelAdmin):
 
     def has_module_permission(self, request):
         # Peut accéder au module uniquement si a un compte ou est manager d'un compte
-        #if not type(request.user) is User:
-            #return False
+        if not hasattr(request.user, 'comptes'):
+            return False
         return request.user.is_superuser or request.user.comptes.exists() or request.user.mon_compte.exists()
 
 
