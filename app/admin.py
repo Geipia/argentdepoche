@@ -17,7 +17,7 @@ class CompteAdmin(ModelAdmin):
     list_filter = ['manager', 'client']
     list_per_page = 10
 
-    actions_submit_line = ["add_one_euro_action"]
+    actions_submit_line = ["add_one_euro_action", 'remove_one_euro_action']
 
     @action(
         description=_("Ajout 1 euro action"),
@@ -29,6 +29,9 @@ class CompteAdmin(ModelAdmin):
         """
         obj.add_money(1)
         # obj.save()
+
+    def remove_one_euro_action(self, request: HttpRequest, obj: Compte):
+        obj.take_money(1)
 
     # def has_changeform_submitline_action_permission(self, request: HttpRequest, object_id: Union[str, int]):
     #     Write your own bussiness logic. Code below will always display an action.
