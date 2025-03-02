@@ -1,12 +1,14 @@
-from django.contrib import admin
+from typing import Union
+
+from django.contrib import admin, messages
 from django import forms
 from django.db.models.query_utils import Q
 from django.http.request import HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls.base import reverse_lazy
 from unfold.admin import ModelAdmin
-# from unfold.enums import ActionVariant
 from unfold.decorators import action
+# from unfold.enums import ActionVariant
 from app.models import Compte, Transaction
 from django.utils.translation import gettext as _
 
@@ -17,12 +19,20 @@ class TransactionForm(forms.Form):
 
 @admin.register(Compte)
 class CompteAdmin(ModelAdmin):
-    list_display = ('name', 'salary', 'total', 'client')
+    list_display = ('name', 'salary', 'total', 'client', 'manager')
     search_fields = ['name']
     list_filter = ['manager', 'client']
     list_per_page = 10
 
-    actions_detail = ["add_money", "take_money"]
+    actions_detail = ["add_money", "take_money", "compress_compte_transactions"]
+    # actions_row = ["add_money", "take_money"]
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Check if the instance already exists
+            return ('client','manager')
+        return ()
+
+
 
     def _display_transaction_form(self, request, form, obj):
         return render(
@@ -36,7 +46,24 @@ class CompteAdmin(ModelAdmin):
             },
         )
 
-    @action(description=_("Ajouter de l'argent au compte"), url_path="compte-add-action", icon="add")
+    @action(
+        description=_("Compresser les transactions"),
+        # url_path="compre-transactions-action",
+        # attrs={"target": "_blank"},
+    )
+    def compress_compte_transactions(self, request: HttpRequest, object_id:int):
+        compte = get_object_or_404(Compte, pk=object_id)
+        compte.compress_transactions()
+        return redirect(
+            reverse_lazy("admin:app_compte_change", args=(object_id,))
+        )
+
+    @action(
+        description=_("Ajouter de l'argent au compte"),
+        url_path="compte-add-action",
+        icon="add",
+        permissions=['add_money']
+    )
     def add_money(self, request: HttpRequest, object_id: int) -> str:
         # Check if object already exists, otherwise returs 404
         obj = get_object_or_404(Compte, pk=object_id)
@@ -45,8 +72,10 @@ class CompteAdmin(ModelAdmin):
         if request.method == "POST" and form.is_valid():
             # Process form data
             amount = form.cleaned_data["amount"]
-
-            obj.add_money(amount)
+            try:
+                obj.add_money(amount)
+            except ValueError as e:
+                messages.error(request, e)
             obj.save()
 
             # messages.success(request, _("Change detail action has been successful."))
@@ -58,7 +87,12 @@ class CompteAdmin(ModelAdmin):
         return self._display_transaction_form(request, form, obj)
 
 
-    @action(description=_("Prélever de l'argent sur le compte"), url_path="compte-remove-action", icon="remove")
+    @action(
+        description=_("Prélever de l'argent sur le compte"),
+        url_path="compte-remove-action",
+        icon="remove",
+        permissions=['take_money']
+    )
     def take_money(self, request: HttpRequest, object_id: int) -> str:
         # Check if object already exists, otherwise returs 404
         obj = get_object_or_404(Compte, pk=object_id)
@@ -67,8 +101,11 @@ class CompteAdmin(ModelAdmin):
         if request.method == "POST" and form.is_valid():
             # Process form data
             amount = form.cleaned_data["amount"]
+            try:
+                obj.take_money(amount)
+            except ValueError as e:
+                messages.error(request, e)
 
-            obj.take_money(amount)
             obj.save()
 
             # messages.success(request, _("Change detail action has been successful."))
@@ -79,6 +116,13 @@ class CompteAdmin(ModelAdmin):
 
         return self._display_transaction_form(request, form, obj)
 
+    def has_add_money_permission(self, request: HttpRequest, object_id: Union[int, str]) -> bool:
+        obj = get_object_or_404(Compte, pk=object_id)
+        return request.user == obj.manager
+
+    def has_take_money_permission(self, request: HttpRequest, object_id: Union[int, str]) -> bool:
+        obj = get_object_or_404(Compte, pk=object_id)
+        return request.user == obj.manager
 
 
     def get_list_filter(self, request):

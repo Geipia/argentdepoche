@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import gettext as _
@@ -31,15 +33,25 @@ class Compte(models.Model):
 
     def take_money(self, amount:float, description:str=None):
         if amount < 0:
-            raise ValueError('Amount cannot be negative')
+            raise ValueError('Le montant ne peut pas être négatif')
+        if amount > self.total:
+            raise ValueError('Vous ne pouvez pas prélever plus que le total du compte')
         self.transactions.create(amount=-amount, description=description)
 
 
-
+    def compress_transactions(self, last_day:datetime.date = None):
+        if last_day is None:
+            last_day = datetime.today()
+        transactions = self.transactions.filter(created_at__lte=last_day)
+        compressed_transactions = Transaction(compte_id=self.id, created_at=last_day, description=f"Situation au {last_day.strftime('%d/%m/%Y')}", amount=0)
+        for transaction in transactions:
+            compressed_transactions.amount += transaction.amount
+            transaction.delete(keep_parents=True)
+        compressed_transactions.save()
 
     def __str__(self):
         return self.name
-    
+
 
 class Transaction(models.Model):
     # protected $fillable = ['compte_id', 'amount', 'type', 'description'];
@@ -48,7 +60,10 @@ class Transaction(models.Model):
     description = models.TextField(null=True, blank=True, verbose_name=_('Description'))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created at'))
 
+
     def __str__(self):
         return f"{self.compte.name} - {self.amount}"
+
+
 
 # Create your models here.
