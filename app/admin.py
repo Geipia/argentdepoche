@@ -6,7 +6,7 @@ from django.db.models.query_utils import Q
 from django.http.request import HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls.base import reverse_lazy
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, StackedInline
 from unfold.decorators import action
 # from unfold.enums import ActionVariant
 from app.models import Compte, Transaction
@@ -17,20 +17,35 @@ class TransactionForm(forms.Form):
     amount = forms.DecimalField(decimal_places=2, max_digits=10, min_value=0)
 
 
+class TransactionsStackedInline(StackedInline):
+    model = Transaction
+    extra = 0
+    fields = ('created_at', 'amount', 'description')
+    ordering = ["-created_at"]
+    readonly_fields = ('amount','description', 'created_at')
+    can_delete = False
+
+    def has_add_permission(self, request, obj):
+        return False
+
+
 @admin.register(Compte)
 class CompteAdmin(ModelAdmin):
     list_display = ('name', 'salary', 'total', 'client', 'manager')
+    fields = ('name', 'salary', 'total', 'client', 'manager')
     search_fields = ['name']
     list_filter = ['manager', 'client']
     list_per_page = 10
+
+    inlines = (TransactionsStackedInline, )
 
     actions_detail = ["add_money", "take_money", "compress_compte_transactions"]
     # actions_row = ["add_money", "take_money"]
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Check if the instance already exists
-            return ('client','manager')
-        return ()
+            return ('client','manager', 'total')
+        return ('total')
 
 
 
@@ -153,6 +168,9 @@ class CompteAdmin(ModelAdmin):
             return False
         return request.user.comptes.exists() or request.user.mon_compte.exists()
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def get_queryset(self, request):
         query_set = super().get_queryset(request)
         if not request.user.is_superuser:
@@ -192,6 +210,9 @@ class TransactionAdmin(ModelAdmin):
         if not hasattr(request.user, 'comptes'):
             return False
         return request.user.is_superuser or request.user.comptes.exists() or request.user.mon_compte.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
     def has_change_permission(self, request, obj=None):
