@@ -1,13 +1,18 @@
-from typing import Union
-
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django import forms
 from django.db.models.query_utils import Q
 from django.http.request import HttpRequest
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls.base import reverse_lazy
 from unfold.admin import ModelAdmin
+# from unfold.enums import ActionVariant
 from unfold.decorators import action
 from app.models import Compte, Transaction
 from django.utils.translation import gettext as _
+
+
+class TransactionForm(forms.Form):
+    amount = forms.DecimalField(decimal_places=2, max_digits=10, min_value=0)
 
 
 @admin.register(Compte)
@@ -17,27 +22,64 @@ class CompteAdmin(ModelAdmin):
     list_filter = ['manager', 'client']
     list_per_page = 10
 
-    actions_submit_line = ["add_one_euro_action", 'remove_one_euro_action']
+    actions_detail = ["add_money", "take_money"]
 
-    @action(
-        description=_("Ajout 1 euro action"),
-        # permissions=["changeform_submitline_action"]
-    )
-    def add_one_euro_action(self, request: HttpRequest, obj: Compte):
-        """
-        If instance is modified in any way, it also needs to be saved, since this handler is invoked after instance is saved.
-        """
-        obj.add_money(1)
-        # obj.save()
+    def _display_transaction_form(self, request, form, obj):
+        return render(
+            request,
+            "forms/transaction_form.html",
+            {
+                "form": form,
+                "object": obj,
+                "title": _("Ajouter de l'argent sur le compte {}").format(obj),
+                **self.admin_site.each_context(request),
+            },
+        )
 
-    def remove_one_euro_action(self, request: HttpRequest, obj: Compte):
-        obj.take_money(1)
+    @action(description=_("Ajouter de l'argent au compte"), url_path="compte-add-action", icon="add")
+    def add_money(self, request: HttpRequest, object_id: int) -> str:
+        # Check if object already exists, otherwise returs 404
+        obj = get_object_or_404(Compte, pk=object_id)
+        form = TransactionForm(request.POST or None)
 
-    # def has_changeform_submitline_action_permission(self, request: HttpRequest, object_id: Union[str, int]):
-    #     Write your own bussiness logic. Code below will always display an action.
-        # return True
+        if request.method == "POST" and form.is_valid():
+            # Process form data
+            amount = form.cleaned_data["amount"]
 
-    # readonly_fields = ['client', 'total', 'manager']
+            obj.add_money(amount)
+            obj.save()
+
+            # messages.success(request, _("Change detail action has been successful."))
+
+            return redirect(
+                reverse_lazy("admin:app_compte_change", args=[object_id])
+            )
+
+        return self._display_transaction_form(request, form, obj)
+
+
+    @action(description=_("Prélever de l'argent sur le compte"), url_path="compte-remove-action", icon="remove")
+    def take_money(self, request: HttpRequest, object_id: int) -> str:
+        # Check if object already exists, otherwise returs 404
+        obj = get_object_or_404(Compte, pk=object_id)
+        form = TransactionForm(request.POST or None)
+
+        if request.method == "POST" and form.is_valid():
+            # Process form data
+            amount = form.cleaned_data["amount"]
+
+            obj.take_money(amount)
+            obj.save()
+
+            # messages.success(request, _("Change detail action has been successful."))
+
+            return redirect(
+                reverse_lazy("admin:app_compte_change", args=[object_id])
+            )
+
+        return self._display_transaction_form(request, form, obj)
+
+
 
     def get_list_filter(self, request):
         # On affiche les filtres uniquement pour le superutilisateur
