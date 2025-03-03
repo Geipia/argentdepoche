@@ -14,7 +14,7 @@ class Compte(models.Model):
     
     @property
     def total (self):
-        return self.transactions.aggregate(models.Sum('amount'))['amount__sum'] or 0
+        return self.transactions.get_total_amount()
 
 
     def add_money(self, amount:float, description:str=None):
@@ -42,15 +42,26 @@ class Compte(models.Model):
     def compress_transactions(self, last_day:datetime.date = None):
         if last_day is None:
             last_day = datetime.today()
+        # on récupère les transactions plus vieilles que last_day
         transactions = self.transactions.filter(created_at__lte=last_day)
-        compressed_transactions = Transaction(compte_id=self.id, created_at=last_day, description=f"Situation au {last_day.strftime('%d/%m/%Y')}", amount=0)
-        for transaction in transactions:
-            compressed_transactions.amount += transaction.amount
-            transaction.delete(keep_parents=True)
+        # On créé une nouvelle transaction avec le montant total de ces transactions
+        compressed_transactions = Transaction(compte_id=self.id, created_at=last_day, description=f"Situation au {last_day.strftime('%d/%m/%Y')}", amount=transactions.get_total_amount())
         compressed_transactions.save()
+        # On supprime les transactions
+        transactions.delete()
 
     def __str__(self):
         return self.name
+
+class TransactionQuerySet(models.query.QuerySet):
+    def get_total_amount(self):
+        return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
+
+class TransactionManager(models.Manager):
+    def get_queryset(self):
+        return TransactionQuerySet(self.model, using=self._db)
+    def get_total_amount(self):
+        return self.aggregate(models.Sum('amount'))['amount__sum'] or 0
 
 
 class Transaction(models.Model):
@@ -60,6 +71,7 @@ class Transaction(models.Model):
     description = models.TextField(null=True, blank=True, verbose_name=_('Description'))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created at'))
 
+    objects = TransactionManager()
 
     def __str__(self):
         return f"{self.compte.name} - {self.amount}"

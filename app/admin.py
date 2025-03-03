@@ -6,7 +6,7 @@ from django.db.models.query_utils import Q
 from django.http.request import HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls.base import reverse_lazy
-from unfold.admin import ModelAdmin, StackedInline
+from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import action
 # from unfold.enums import ActionVariant
 from app.models import Compte, Transaction
@@ -17,7 +17,7 @@ class TransactionForm(forms.Form):
     amount = forms.DecimalField(decimal_places=2, max_digits=10, min_value=0)
 
 
-class TransactionsStackedInline(StackedInline):
+class TransactionsStackedInline(TabularInline):
     model = Transaction
     extra = 0
     fields = ('created_at', 'amount', 'description')
@@ -93,7 +93,7 @@ class CompteAdmin(ModelAdmin):
                 messages.error(request, e)
             obj.save()
 
-            # messages.success(request, _("Change detail action has been successful."))
+            messages.success(request, _(f"Le compte a été crédité de {amount}€"))
 
             return redirect(
                 reverse_lazy("admin:app_compte_change", args=[object_id])
@@ -123,7 +123,7 @@ class CompteAdmin(ModelAdmin):
 
             obj.save()
 
-            # messages.success(request, _("Change detail action has been successful."))
+            messages.warning(request, _(f"Le compte a été débité de {amount}€"))
 
             return redirect(
                 reverse_lazy("admin:app_compte_change", args=[object_id])
