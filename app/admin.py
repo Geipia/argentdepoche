@@ -32,7 +32,6 @@ class TransactionsStackedInline(TabularInline):
 @admin.register(Compte)
 class CompteAdmin(ModelAdmin):
     list_display = ('name', 'salary', 'total', 'client', 'manager')
-    fields = ('name', 'salary', 'client', 'manager')
     search_fields = ['name']
     list_filter = ['manager', 'client']
     list_per_page = 10
@@ -40,7 +39,13 @@ class CompteAdmin(ModelAdmin):
     inlines = (TransactionsStackedInline, )
 
     actions_detail = ["add_money", "take_money", "compress_compte_transactions"]
-    # actions_row = ["add_money", "take_money"]
+
+    def get_fields(self, request, obj=None):
+        fields = ['name', 'salary', 'client', 'manager']
+        if obj:
+            fields.append('total')
+        return fields
+
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Check if the instance already exists
