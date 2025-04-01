@@ -48,7 +48,7 @@ class Compte(models.Model):
         compressed_transactions = Transaction(compte_id=self.id, created_at=last_day, description=f"Situation au {last_day.strftime('%d/%m/%Y')}", amount=transactions.get_total_amount())
         compressed_transactions.save()
         # On supprime les transactions
-        transactions.delete()
+        transactions.exclude(id=compressed_transactions.id).delete()
 
     def __str__(self):
         return self.name
