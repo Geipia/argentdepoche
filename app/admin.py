@@ -32,7 +32,7 @@ class TransactionsStackedInline(TabularInline):
 @admin.register(Compte)
 class CompteAdmin(ModelAdmin):
     list_display = ('name', 'salary', 'total', 'client', 'manager')
-    fields = ('name', 'salary', 'total', 'client', 'manager')
+    fields = ('name', 'salary', 'client', 'manager')
     search_fields = ['name']
     list_filter = ['manager', 'client']
     list_per_page = 10
