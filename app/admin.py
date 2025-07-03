@@ -164,14 +164,12 @@ class CompteAdmin(ModelAdmin):
         return request.user == obj.manager or request.user == obj.client
 
     def has_module_permission(self, request):
-        if not request.user:
-            return False
-        # Peut accéder au module uniquement si a un compte ou est manager d'un compte
-        if request.user.is_superuser:
-            return True
-        if not hasattr(request.user, 'comptes'):
-            return False
-        return request.user.comptes.exists() or request.user.mon_compte.exists()
+        # Permet à tout utilisateur staff ou superuser de voir le module
+        return request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+
+    def has_add_permission(self, request):
+        # Permet à tout utilisateur staff ou superuser d'ajouter un compte
+        return request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -223,4 +221,8 @@ class TransactionAdmin(ModelAdmin):
     def has_change_permission(self, request, obj=None):
         # Une transaction ne peut pas être modifiée
         return False
+
+    def has_add_permission(self, request):
+        # Autorise tout utilisateur staff à créer un compte bancaire
+        return request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
 

@@ -6,11 +6,12 @@ from django.utils.translation import gettext as _
 
 class Compte(models.Model):
     # protected $fillable = ['user_id', 'manager_id', 'name', 'salary', 'total'];
-    name = models.CharField(max_length=24, verbose_name=_('Name'))
-    salary = models.FloatField(default=0, verbose_name=_('Salary'))
+    name = models.CharField(max_length=24, verbose_name=_('Name'), help_text=_('Nom du compte (ex: Prénom de l’enfant)'))
+    salary = models.FloatField(default=0, verbose_name=_('Salary'), help_text=_('Montant du salaire hebdomadaire automatique.'))
     #total = models.FloatField(default=0)
-    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes', verbose_name=_('Manager'))
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte', verbose_name=_('Account user'))
+    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comptes', verbose_name=_('Manager'), help_text=_('Parent ou responsable du compte.'))
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mon_compte', verbose_name=_('Account user'), help_text=_('Enfant ou bénéficiaire du compte.'))
+    last_salary_payment = models.DateTimeField(null=True, blank=True, verbose_name=_('Last salary payment'), help_text=_('Date du dernier versement automatique du salaire.'))
     
     @property
     def total (self):
@@ -49,6 +50,17 @@ class Compte(models.Model):
         compressed_transactions.save()
         # On supprime les transactions
         transactions.exclude(id=compressed_transactions.id).delete()
+
+    def pay_salary_if_due(self):
+        """
+        Verse le salaire si une semaine s'est écoulée depuis le dernier paiement.
+        """
+        from django.utils import timezone
+        now = timezone.now()
+        if not self.last_salary_payment or (now - self.last_salary_payment).days >= 7:
+            self.add_money(self.salary, description=_('Weekly salary payment'))
+            self.last_salary_payment = now
+            self.save()
 
     def __str__(self):
         return self.name

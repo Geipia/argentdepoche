@@ -2,12 +2,21 @@
 
 
 {% block content %}
-<h1>
-    Application d'argent de poche
-</h1>
-
-
-<a href="/admin">Connectez-vous</a>
-
-
+<div class="container">
+    <h1>Application d'argent de poche</h1>
+    <p class="subtitle">Gérez facilement l'argent de poche, les comptes et les transactions de votre famille.</p>
+    <div class="actions">
+        <a class="btn" href="/admin">Se connecter à l'administration</a>
+        <a class="btn" href="/register/">Créer un compte utilisateur</a>
+    </div>
+    <section class="how-it-works">
+        <h2>Comment ça marche&nbsp;?</h2>
+        <ol>
+            <li>Créez un compte pour chaque membre de la famille.</li>
+            <li>Ajoutez un salaire hebdomadaire automatique pour chaque compte.</li>
+            <li>Ajoutez ou retirez de l'argent selon les besoins.</li>
+            <li>Consultez l'historique des transactions à tout moment.</li>
+        </ol>
+    </section>
+</div>
 {% endblock %}
